@@ -1,4 +1,4 @@
-# twitcherino
+# Twitcherino
 **Twitcherino** is a TUI nim-based twitch client 
 
 ## Requirements
