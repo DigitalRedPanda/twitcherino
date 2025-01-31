@@ -1,4 +1,4 @@
 core.*
-.env
-.gitignore
+*.env
+./.gitignore
 
