@@ -12,4 +12,5 @@ bin           = @["twicherino"]
 
 requires "nim >= 2.2.0"
 requires "db_connector >= 0.1.0"
+requires "illwill >= 0.4.1"
 
