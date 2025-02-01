@@ -1,21 +1,40 @@
 # This is just an example to get you started. A typical binary package
 # uses this file as the main entry point of the application.
 
-import illwill, os
+import illwill, os, sequtils, irc/client, std/strformat, re, net
 
-proc drawTab(buffer: var TerminalBuffer, x,y: Natural, title: string, border: Natural) = 
-  buffer.drawRect(x, y, x + title.len + 1 + border, y + border)
-  buffer.write(x + border, y + border div 2, title)
+
+var
+  channel: Channel[string]
+  
+
+proc handleMessages(client: Client) {.thread, gcsafe.} =
+  let re = re"(^([!:]\w+)+|\.tmi\.twitch\.tv)"
+  discard client.joinChannel("digital_red_panda")
+  client.sendMessage("digital_red_panda", "ayo")
+  while true:
+    let tmp = client.socket.recvLine().replace(re, "")
+    channel.send(tmp)
+
+proc drawTab(buffer: var TerminalBuffer, x,y: Natural, content: string, padding: Natural) = 
+  buffer.drawRect(x, y, x + content.len + 1 + padding, y + padding)
+  buffer.write(x + padding, y + padding div 2, content)
 
 proc main = 
   stdout.write("\e[?1049h\e[?47h")
   var 
     channels = @["Zaaatar", "1dzo", "SadMadLadSalman", "SoulSev", "CopyNine"]
     messages = @["dummy", "dumdum", "donk", "dank"]
-  illwillInit(true)
+    client = newClient()
+  client.init()
+  #illwillInit()
+  open(channel)
+  hideCursor()
   defer: 
-    illwillDeinit()
+    #illwillDeinit()
     showCursor()
+    channel.close()
+    client.close()
     quit("[\e[32mINFO\e[0m] exiting", 0)
 
 #  setControlCHook(
@@ -24,6 +43,11 @@ proc main =
 #      showCursor()
 #      quit("[\e[32mINFO\e[0m] exiting", 0)
 #    )
+  var
+    thread: Thread[Client]
+    messagesList = newSeq[string]()
+  createThread(thread, handleMessages, client)
+  
   while true:
     let
       width = terminalWidth()
@@ -32,13 +56,23 @@ proc main =
       buffer = newTerminalBuffer(width, height)
     stdout.write("\e[38;5;239m")
     buffer.drawRect(0, 0, width - 1, height - 1, true)
-    var widthSum = 0
+    var 
+      widthSum = 0
+      heightSum = 0
     for channel in channels:
-      let 
-        x,y = widthSum + 1
-
-      buffer.drawTab(1, 1, channel, 2)
-      
+      if widthSum >= width:
+        widthSum = 0
+        heightSum += 3
+      let
+        x = widthSum + 1
+        y = heightSum + 1
+      buffer.drawTab(x, y, channel, 2)
+      widthSum += abs(widthSum - (x + channel.len)) + 3
+    let msg = channel.tryRecv()
+    if msg.dataAvailable:
+      messagesList.add(msg.msg)
+    for i, message in messagesList:
+      buffer.write(heightSum + i, 1, message)
     buffer.setForegroundColor(fgWhite)
     let key = getkey()
     case key:
@@ -46,7 +80,6 @@ proc main =
         break
       else: discard
     buffer.display()
-    sleep(4)
         
 main()
 # Example demonstrating the various box drawing methods.

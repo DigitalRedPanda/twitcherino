@@ -1,0 +1,44 @@
+import tables, asyncnet, asyncdispatch
+
+type 
+  Client* = ref object 
+    connections*: seq[Channel]
+    credentials: TableRef[string, string] 
+    socket: AsyncSocket
+    events: seq[Event]
+  Events* = enum
+    MessageEvent, CommandEvent
+  User* = object 
+    id: Natural
+    login, name: cstring
+  Channel* = ref object 
+    id: Natural
+    login, name: string
+  Message* = object 
+    id: Natural
+    content: cstring
+    user: User
+    channel: Channel
+  Command* = object 
+    id: Natural
+    user: User 
+    command: cstring 
+    args: seq[cstring]
+  Event = object
+    kind: Events
+    callback: proc(message: Message, command: Command)
+
+func newClient*(): Client = Client()
+
+proc init*(client: var Client) = 
+  client.socket = newAsyncSocket()
+  waitFor client.socket.connect("irc://irc.chat.twitch.tv", Port(6697))
+  waitFor client.socket.send("PASS oauth:fo49l6znglvh4j7wk1dv5eip7jw96o\nNICK digital_red_panda\c\L")
+
+proc onEvent(client: var Client, event: Event, ) = discard
+
+
+
+
+
+
