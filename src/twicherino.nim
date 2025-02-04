@@ -1,48 +1,62 @@
 # This is just an example to get you started. A typical binary package
 # uses this file as the main entry point of the application.
 
-import illwill, os, sequtils, irc/client, std/strformat, re, net
+import illwill, os, sequtils, irc/client, std/strformat, re, net, strutils, asyncdispatch
 
 
 var
-  channel: Channel[string]
+  channel: system.Channel[string]
   
 
-proc handleMessages(client: Client) {.thread, gcsafe.} =
-  let re = re"(^([!:]\w+)+|\.tmi\.twitch\.tv)"
-  discard client.joinChannel("digital_red_panda")
-  client.sendMessage("digital_red_panda", "ayo")
-  while true:
-    let tmp = client.socket.recvLine().replace(re, "")
+proc handleMessages(client: Client) {.thread, gcsafe} =
+  let 
+    re = re"(^([!:]\w+)+|\.tmi\.twitch\.tv)"
+  discard client.joinChannel("bessbosss")
+  client.sendMessage("bessbosss", "ayo")
+  loop:
+    let
+      tmp = client.socket.recvLine() 
+      args = tmp.split(" ", 3)
     channel.send(tmp)
+    if args[0] == "PING":
+      client.socket.send("PONG :tmi.twitch.tv")
+    elif args[2] == "PRIVMSG": 
+      let 
+        tags = tmp.parseTags()
+        displayTag = tags.getTag("display-name")
+      echo tmp.parseIRCCommand()
+      #channel.send(args[0] & ": " & temp[1])
+      channel.send(displayTag.value)
+     
+
+
 
 proc drawTab(buffer: var TerminalBuffer, x,y: Natural, content: string, padding: Natural) = 
   buffer.drawRect(x, y, x + content.len + 1 + padding, y + padding)
   buffer.write(x + padding, y + padding div 2, content)
 
 proc main = 
-  stdout.write("\e[?1049h\e[?47h")
   var 
     channels = @["Zaaatar", "1dzo", "SadMadLadSalman", "SoulSev", "CopyNine"]
     messages = @["dummy", "dumdum", "donk", "dank"]
     client = newClient()
   client.init()
-  #illwillInit()
+  illwillInit()
   open(channel)
   hideCursor()
   defer: 
-    #illwillDeinit()
+    illwillDeinit()
     showCursor()
     channel.close()
     client.close()
-    quit("[\e[32mINFO\e[0m] exiting", 0)
+    quit("[\e[32mINFO\e[0m] exiting\e[?47l\e[u\e[1049l", 0)
 
-#  setControlCHook(
-#    proc() {.noconv.} = 
-#      illwillDeinit()
-#      showCursor()
-#      quit("[\e[32mINFO\e[0m] exiting", 0)
-#    )
+  setControlCHook(
+    proc() {.noconv.} = 
+      illwillDeinit()
+      showCursor()
+      quit("[\e[32mINFO\e[0m] exiting", 0)
+    )
   var
     thread: Thread[Client]
     messagesList = newSeq[string]()
@@ -72,7 +86,7 @@ proc main =
     if msg.dataAvailable:
       messagesList.add(msg.msg)
     for i, message in messagesList:
-      buffer.write(heightSum + i, 1, message)
+      buffer.write(1, heightSum + i + 4, message)
     buffer.setForegroundColor(fgWhite)
     let key = getkey()
     case key:
@@ -80,8 +94,70 @@ proc main =
         break
       else: discard
     buffer.display()
+
+proc main1 = 
+  var 
+    channels = @["Zaaatar", "1dzo", "SadMadLadSalman", "SoulSev", "CopyNine"]
+    messages = @["dummy", "dumdum", "donk", "dank"]
+    client = newClient()
+  client.init()
+#  illwillInit()
+  open(channel)
+  hideCursor()
+  defer: 
+    #illwillDeinit()
+    showCursor()
+    channel.close()
+    client.close()
+    quit("[\e[32mINFO\e[0m] exiting\e[?47l\e[u\e[1049l", 0)
+
+#  setControlCHook(
+#    proc() {.noconv.} = 
+#      illwillDeinit()
+#      showCursor()
+#      quit("[\e[32mINFO\e[0m] exiting", 0)
+#    )
+  var
+    thread: Thread[Client]
+    messagesList = newSeq[string]()
+  createThread(thread, handleMessages, client)
+  
+  while true:
+#    let
+#      width = terminalWidth()
+#      height = terminalHeight()
+#    var
+#      buffer = newTerminalBuffer(width, height)
+#    stdout.write("\e[38;5;239m")
+#    buffer.drawRect(0, 0, width - 1, height - 1, true)
+#    var 
+#      widthSum = 0
+#      heightSum = 0
+#    for channel in channels:
+#      if widthSum >= width:
+#        widthSum = 0
+#        heightSum += 3
+#      let
+#        x = widthSum + 1
+#        y = heightSum + 1
+#      buffer.drawTab(x, y, channel, 2)
+#      widthSum += abs(widthSum - (x + channel.len)) + 3
+    let msg = channel.recv()
+    messagesList.add(msg)
+    echo msg
+#    for i, message in messagesList:
+#      buffer.write(1, heightSum + i + 4, message)
+#    buffer.setForegroundColor(fgWhite)
+#    let key = getkey()
+#    case key:
+#      of Key.Escape:
+#        break
+#      else: discard
+#    buffer.display()
         
-main()
+
+
+main1()
 # Example demonstrating the various box drawing methods.
 
 #import illwill

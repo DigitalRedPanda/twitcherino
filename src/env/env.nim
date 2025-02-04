@@ -1,8 +1,7 @@
 import strutils, tables
-proc load*(fileName: string): TableRef = 
-  var table = initTable[string, string]()
+proc load*(fileName: string): Table[string,string] = 
+  result = initTable[string, string]()
   for i in fileName.readLines(3):
     let temp = i.split("=")
-    table[temp[0], temp[1]] 
-  return table
-
+    result[temp[0]] =  temp[1]
+    
