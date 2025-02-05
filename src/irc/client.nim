@@ -1,4 +1,4 @@
-import tables, net, std/re, strutils, ../env/env
+import tables, net, std/re, strutils, ../env/env, parseutils, options, strformat
 {.experimental: "strictDefs".}
 
 
@@ -51,7 +51,7 @@ proc close*(client: Client) =
   client.socket.close()
 
 proc joinChannel*(client: Client, name: string): bool = 
-  client.socket.send("JOIN #" & name & "\c\L")
+  client.socket.trySend("JOIN #" & name & "\c\L")
 
 proc sendMessage*(client: Client, channel, message: string) = 
   client.socket.send("PRIVMSG #" & channel & " :" & message & "\c\L")
@@ -64,10 +64,12 @@ func getTag*(tags: seq[Tag], name = "", value = ""): Tag =
     for i in tags:
       if i.name == name:
         return i
+      return (name:"", value:"")
   elif not value.isEmptyOrWhitespace:
     for i in tags:
       if i.value == value:
         return i
+    return (name:"", value:"")
   else: 
     return (name:"", value:"")
 
@@ -96,10 +98,7 @@ func parsePrefix*(input: string): Prefix =
           parsingArray[indx] = input[idx..index - 1]
           idx = index
           inc indx
-
-          
       inc index
-
     result = (nick: parsingArray[0], user: parsingArray[1], host:input[idx..size-1])
   else: 
     result = (nick:"",user:"",host:"")
@@ -117,6 +116,17 @@ func parseIRCMessage(input: string): IRCMessage {.inline.} =
       of "USERSTATE": return USERSTATE
       of "PING": return PING 
 
+func parseColor*(input: string): tuple[R,G,B: int] =  
+  if input.startsWith('#'):
+    let temp = input[1..<input.len]
+    var
+      RGB: array[3, int]
+      indx = 0
+    for i in 0..2:
+      RGB[i] = temp[indx..indx + 1].parseHexInt
+      indx += 2
+
+    return (R:RGB[0], G: RGB[1], B:RGB[2])
 
 func parseIRCCommand*(input: string): IRCCommand = 
   if not input.isEmptyOrWhitespace:
@@ -124,11 +134,25 @@ func parseIRCCommand*(input: string): IRCCommand =
       temp = input.split(' ', 1)
     if input.hasTags():
       let
-        tmp = temp[1].split(' ')
+        tmp = temp[1].split(' ', 3)
         prefix = tmp[0].parsePrefix()
         tags = temp[0].parseTags()
-        ircMessage = tmp[2].parseIRCMessage()
-      return IRCCommand(message:ircMessage, tags:tags, prefix:prefix)
+        ircMessage = tmp[2]
+      case ircMessage:
+        of "PRIVMSG":
+          let size = tmp[3].len
+          return IRCCommand(message:PRIVMSG, prefix: prefix, channel: tmp[2], msg:tmp[3][1..<size])
+        of "NOTICE": discard 
+        of "JOIN":  
+          return IRCCommand(message:JOIN, prefix: prefix, channel: tmp[2])
+        of "PART": 
+          return IRCCommand(message:PART, prefix:prefix, channel: tmp[2])
+        of "RECONNECT": discard
+        of "USERNOTICE": discard
+        of "ROOMSTATE": discard
+        of "USERSTATE": discard
+        of "PING": return IRCCommand(message:PING, prefix:(nick:"", user:"", host:temp[1]))
+      return IRCCommand(message:ircMessage.parseIRCMessage, tags:tags, prefix:prefix)
 
 
 
@@ -136,7 +160,10 @@ func parseIRCCommand*(input: string): IRCCommand =
 
   
 proc init*(client: Client) {.gcsafe.} = 
-  client.credentials = load("src/env/.env")
+  let temp = load("src/env/.env")
+  if temp.isNone:
+    raise newException(NilAccessDefect, "unable to load credentials")
+  client.credentials = temp.get()
   client.socket.connect("irc.chat.twitch.tv", Port(6667))
   client.socket.send("PASS oauth:" & client.credentials["TOKEN"] & "\c\L")
   client.socket.send("NICK digital_red_panda\c\L")

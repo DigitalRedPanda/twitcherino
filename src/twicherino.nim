@@ -23,10 +23,12 @@ proc handleMessages(client: Client) {.thread, gcsafe} =
     elif args[2] == "PRIVMSG": 
       let 
         tags = tmp.parseTags()
-        displayTag = tags.getTag("display-name")
+        displayTag = tags.getTag("color")
       echo tmp.parseIRCCommand()
       #channel.send(args[0] & ": " & temp[1])
-      channel.send(displayTag.value)
+      let temp = displayTag.value.parseColor
+      let tmtomy = &"({$temp.R}, {$temp.G}, {$temp.B})"
+      channel.send(tmtomy)
      
 
 
