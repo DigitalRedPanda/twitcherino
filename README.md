@@ -1,4 +1,5 @@
 # Twitcherino
+[demo.gif](https://raw.githubusercontent.com/DigitalRedPanda/twitcherino/refs/heads/master/images/demo.gif)
 **Twitcherino** is a TUI nim-based twitch client 
 
 ## Requirements
@@ -8,7 +9,7 @@
 ## Building from source
 You'll need [nimble](https://nim-lang.org/) ``2.2.0`` or greater. 
 ```bash
-nimble -d:release -d:ssl build
+nimble --threads:on -d:release -d:ssl build
 ```
 
 
