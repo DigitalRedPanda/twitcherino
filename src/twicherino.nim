@@ -1,48 +1,85 @@
 # This is just an example to get you started. A typical binary package
 # uses this file as the main entry point of the application.
 
-import illwill, os, sequtils, irc/client, std/strformat, re, net, strutils, asyncdispatch
+import illwill, os, sequtils, sugar, irc/client, std/strformat, re, net, strutils, asyncdispatch, tables, terminal, json, rdstdin
 
+
+  
+type Message = object 
+  channel,user, message: string 
 
 var
-  channel: system.Channel[string]
-  
+  channel: system.Channel[Message]
 
 proc handleMessages(client: Client) {.thread, gcsafe} =
-  let 
-    re = re"(^([!:]\w+)+|\.tmi\.twitch\.tv)"
-  discard client.joinChannel("bessbosss")
-  client.sendMessage("bessbosss", "ayo")
+
   loop:
     let
       tmp = client.socket.recvLine() 
-      args = tmp.split(" ", 3)
-    channel.send(tmp)
+      args = tmp.split(' ', 3)
+    #channel.send(tmp)
     if args[0] == "PING":
-      client.socket.send("PONG :tmi.twitch.tv")
-    elif args[2] == "PRIVMSG": 
-      let 
-        tags = tmp.parseTags()
-        displayTag = tags.getTag("color")
-      echo tmp.parseIRCCommand()
-      #channel.send(args[0] & ": " & temp[1])
-      let temp = displayTag.value.parseColor
-      let tmtomy = &"({$temp.R}, {$temp.G}, {$temp.B})"
-      channel.send(tmtomy)
+      client.socket.send("PONG :tmi.twitch.tv\c\L")
+    else: 
+      var
+        command = tmp.parseIRCCommand
+      case command.message:
+        of PRIVMSG:
+          let
+            color = command.tags.getTag(name="color").value.parseColor
+            displayName = command.tags.getTag("display-name")
+            #separator = "\e[{$(textColor.len + 4)}"
+            message = ":\e[0m " & command.msg.replace(" ", " ")
+            msg = Message(channel:command.channel, user: &"\e[38;2;{$color.R};{$color.G};{$color.B}m{displayName.value}", message: message)
+          #channel.send(&"{textColor}{displayName.value}\e[0m,: {message}")
+          channel.send(msg)
+        else: discard
      
 
 
-
-proc drawTab(buffer: var TerminalBuffer, x,y: Natural, content: string, padding: Natural) = 
-  buffer.drawRect(x, y, x + content.len + 1 + padding, y + padding)
+proc drawTab(buffer: var TerminalBuffer, x,y: Natural, content: string, padding: Natural, double = false) = 
+  buffer.drawRect(x, y, x + content.len + 1 + padding, y + padding, double)
   buffer.write(x + padding, y + padding div 2, content)
 
+func drawInputBox(buffer: var TerminalBuffer, x,y,width: Natural, placeholder,text: string) = 
+  let left = x - (width div 2)
+  buffer.drawRect(left, y - 1, x + (width div 2), y + 1)
+  if text.isEmptyOrWhitespace:
+    buffer.write(left + 1, y, placeholder)
+  else:
+    buffer.write(left + 1, y, text)
+
+type Mode = enum
+  Normal, Insert
+
+
 proc main = 
-  var 
-    channels = @["Zaaatar", "1dzo", "SadMadLadSalman", "SoulSev", "CopyNine"]
-    messages = @["dummy", "dumdum", "donk", "dank"]
-    client = newClient()
-  client.init()
+  var client = newClient()
+  const mesg = "  \e[1;36m\e[4mhttps://id.twitch.tv/oauth2/authorize?client_id=yclsy2qxp7jelxtbl09my7wvk8w3b2&redirect_uri=https%3A%2F%2Flocalhost&response_type=token&scope=channel%3Amoderate+channel%3Aread%3Aredemptions+chat%3Aedit+chat%3Aread+whispers%3Aread+channel%3Aedit%3Acommercial+clips%3Aedit+channel%3Amanage%3Abroadcast+user%3Aread%3Ablocked_users+user%3Amanage%3Ablocked_users+moderator%3Amanage%3Aautomod+channel%3Amanage%3Araids+channel%3Amanage%3Apolls+channel%3Aread%3Apolls+channel%3Amanage%3Apredictions+channel%3Aread%3Apredictions+moderator%3Amanage%3Aannouncements+user%3Amanage%3Awhispers+moderator%3Amanage%3Abanned_users+moderator%3Amanage%3Achat_messages+user%3Amanage%3Achat_color+moderator%3Amanage%3Achat_settings+channel%3Amanage%3Amoderators+channel%3Amanage%3Avips+moderator%3Aread%3Achatters+moderator%3Amanage%3Ashield_mode+moderator%3Amanage%3Ashoutouts+user%3Aread%3Amoderated_channels+user%3Aread%3Achat+user%3Awrite%3Achat+user%3Aread%3Aemotes+moderator%3Amanage%3Awarnings+user%3Aread%3Afollows\e[22m\e[24m\e[0m\n\nYou'll be prompted to sign in, then authorization. After that you'll end up in an `\e[1mUnable to connect\e[22m`, if you look carefully at the URL, you'd find `#access_token=\e[1m<TOKEN>\e[22m`double-click on \e[1m<TOKEN>\e[22m, copy it, then paste it in the terminal"
+  const mesg1 = "  \e[1;36m\e[4mhttps://id.twitch.tv/oauth2/authorize?client_id=yclsy2qxp7jelxtbl09my7wvk8w3b2&redirect_uri=https%3A%2F%2Flocalhost&response_type=token&scope=channel%3Amoderate+channel%3Aread%3Aredemptions+chat%3Aedit+chat%3Aread+whispers%3Aread+channel%3Aedit%3Acommercial+clips%3Aedit+channel%3Amanage%3Abroadcast+user%3Aread%3Ablocked_users+user%3Amanage%3Ablocked_users+moderator%3Amanage%3Aautomod+channel%3Amanage%3Araids+channel%3Amanage%3Apolls+channel%3Aread%3Apolls+channel%3Amanage%3Apredictions+channel%3Aread%3Apredictions+moderator%3Amanage%3Aannouncements+user%3Amanage%3Awhispers+moderator%3Amanage%3Abanned_users+moderator%3Amanage%3Achat_messages+user%3Amanage%3Achat_color+moderator%3Amanage%3Achat_settings+channel%3Amanage%3Amoderators+channel%3Amanage%3Avips+moderator%3Aread%3Achatters+moderator%3Amanage%3Ashield_mode+moderator%3Amanage%3Ashoutouts+user%3Aread%3Amoderated_channels+user%3Aread%3Achat+user%3Awrite%3Achat+user%3Aread%3Aemotes+moderator%3Amanage%3Awarnings+user%3Aread%3Afollows\e[22m\e[24m\e[0m\n\nYou'll be prompted to sign in, then authorization. After that you'll end up in an `\e[1mUnable to connect\e[22m`, if you look carefully at the URL, you'd find `#access_token=\e[1m<TOKEN>\e[22m`double-click on \e[1m<TOKEN>\e[22m, copy it, then press enter, and paste "
+
+  try:
+    
+    client.init()
+  except NilAccessDefect: 
+    let 
+      center = terminalWidth() div 2 - (46 div 2)
+      width = terminalWidth()
+    stdout.write(&"""
+{"=".repeat(width)}
+{" ".repeat(center)}__        _______ _     ____ ___  __  __ _____
+{" ".repeat(center)}\ \      / / ____| |   / ___/ _ \|  \/  | ____|
+{" ".repeat(center)} \ \ /\ / /|  _| | |  | |  | | | | |\/| |  _|
+{" ".repeat(center)}  \ V  V / | |___| |__| |__| |_| | |  | | |___
+{" ".repeat(center)}   \_/\_/  |_____|_____\____\___/|_|  |_|_____|    
+{"=".repeat(width)}
+
+if you received this message, then this indicates that probably this is your first time launching this app. To set things up, you first need to generate a token using the link marked by bold:
+
+{mesg}
+""")
+
+    sleep(10000)
   illwillInit()
   open(channel)
   hideCursor()
@@ -61,16 +98,23 @@ proc main =
     )
   var
     thread: Thread[Client]
-    messagesList = newSeq[string]()
+    messagesList = newSeq[twicherino.Message]()
+    channels = newSeq[string]()
+    mode = Normal
+    command = ""
+    cursor = " "
+    currentChannel = client.user.login
+    currentChannelIndex = 0
+    addingChannel = false
+    color = bgNone 
   createThread(thread, handleMessages, client)
-  
+  channels.add(currentChannel)
   while true:
     let
       width = terminalWidth()
       height = terminalHeight()
     var
       buffer = newTerminalBuffer(width, height)
-    stdout.write("\e[38;5;239m")
     buffer.drawRect(0, 0, width - 1, height - 1, true)
     var 
       widthSum = 0
@@ -82,19 +126,95 @@ proc main =
       let
         x = widthSum + 1
         y = heightSum + 1
+      if currentChannel == channel:
+        buffer.drawTab(x, y, channel, 2, true)
+        widthSum += abs(widthSum - (x + channel.len)) + 3
+        continue
       buffer.drawTab(x, y, channel, 2)
       widthSum += abs(widthSum - (x + channel.len)) + 3
+      
     let msg = channel.tryRecv()
     if msg.dataAvailable:
       messagesList.add(msg.msg)
-    for i, message in messagesList:
-      buffer.write(1, heightSum + i + 4, message)
-    buffer.setForegroundColor(fgWhite)
+    var currChannelMsgs = messagesList.filter(x => x.channel == currentChannel).toSeq
+    for i, message in currChannelMsgs:
+      buffer.write(1, heightSum + i + 4, message.user &  message.message)
     let key = getkey()
-    case key:
-      of Key.Escape:
-        break
-      else: discard
+    if mode == Normal:
+      case key:
+        of A..Z, ShiftA..ShiftZ, Zero..Nine,Underscore:
+          if addingChannel:
+            command &= key.char
+          elif key.char == 'j':
+            addingChannel = true
+            buffer.drawInputBox(x=(width div 2).Natural, y=(height div 2).Natural, width=15.Natural, placeholder="Enter channel", text=command)
+          elif key == I:
+            mode = Insert
+            cursor = "▏"
+            color = bgNone
+
+        of Enter:
+          if addingChannel and not command.isEmptyOrWhitespace:
+            discard client.joinChannel(command)
+            channels.addUnique command
+            addingChannel = false 
+            command = ""
+        of Escape: 
+          if addingChannel:
+            addingChannel = false
+        of Backspace:
+          if addingChannel:
+            if command.len > 0:
+             command = command[0..command.len - 2]
+        of Left:
+          if currentChannelIndex > 0 and currentChannelIndex < channels.len:
+            currentChannelIndex -= 1
+            currentChannel = channels[currentChannelIndex]
+        of Right: 
+          if currentChannelIndex >= 0 and currentChannelIndex < channels.len - 1:
+            currentChannelIndex += 1
+            currentChannel = channels[currentChannelIndex]
+
+        else: discard
+
+    else: 
+      case key:
+        of Escape:
+          mode = Normal
+          color = bgWhite
+          command = ""
+        of Backspace:
+          if command.len > 0:
+           command = command[0..command.len - 2]
+        of Slash:
+          discard
+        of Space:
+          command &= ' '
+        of Enter:
+          if not command.isEmptyOrWhitespace:
+            client.sendMessage(currentChannel, command)
+            let 
+              chatColor = client.user.tags.getTag("color").value.parseColor
+              message = ":\e[0m " & command.replace(" ", " ")
+            messagesList.add(Message(channel:currentChannel, user: &"\e[38;2;{$chatColor.R};{$chatColor.G};{$chatColor.B}m" & client.user.displayName, message: message))
+            mode = Normal 
+            cursor = " "
+            color = bgWhite
+            command = ""
+        of None:
+          discard
+        else: 
+          command &= key.char
+
+    if addingChannel:
+      buffer.drawInputBox(x=(width div 2).Natural, y=(height div 2).Natural, width=15.Natural, placeholder="Enter channel", text=command)
+    else:
+      buffer.setForegroundColor(fgWhite)
+      buffer.write(2, height - 2, command)
+      buffer.setBackgroundColor(color)
+      buffer.write(2 + command.len, height - 2, cursor)
+    stdout.write("\e[38;5;239m")
+    sleep(3)
     buffer.display()
 
 proc main1 = 
@@ -145,7 +265,7 @@ proc main1 =
 #      buffer.drawTab(x, y, channel, 2)
 #      widthSum += abs(widthSum - (x + channel.len)) + 3
     let msg = channel.recv()
-    messagesList.add(msg)
+    #messagesList.add(msg)
     echo msg
 #    for i, message in messagesList:
 #      buffer.write(1, heightSum + i + 4, message)
@@ -159,7 +279,7 @@ proc main1 =
         
 
 
-main1()
+main()
 # Example demonstrating the various box drawing methods.
 
 #import illwill
