@@ -11,7 +11,7 @@ type
     connections*: seq[client.Channel]
     credentials*: Table[string, string] 
     user*: User
-    httpClient: HttpClient
+    httpClient: HttpClient 
     socket*: Socket
   Events* = enum
     MessageEvent, CommandEvent
@@ -46,10 +46,11 @@ template loop*(code: untyped) =
 proc newClient*(): Client = 
   let temp = Client()
   temp.socket = newSocket()
+  temp.httpClient = newHttpClient()
   return temp
 
 proc validate*(client: Client, token: string): tuple[valid:bool, content:string] = 
-  client.httpClient.headers.add("Authorization", token)
+  client.httpClient.headers.add("Authorization", "Bearer " & token)
   let response = client.httpClient.request("https://id.twitch.tv/oauth2/validate", httpMethod=HttpGet, headers=client.httpClient.headers)
   if response.status == "401":
     return (false, "")
@@ -207,23 +208,21 @@ proc parseIRCCommand*(input: string): IRCCommand =
   else: discard
 
   
-proc init*(client: Client) = 
+proc init*(client: var Client) = 
   let temp = load("src/env/.env")
   if temp.isNone:
     raise newException(NilAccessDefect, "unable to load credentials")
   client.credentials = temp.get()
-  client.httpClient = newHttpClient()
   client.socket.connect("irc.chat.twitch.tv", Port(6667))
   client.socket.send("PASS oauth:" & client.credentials["TOKEN"] & "\c\L")
   client.socket.send("NICK digital_red_panda\c\L")
   client.socket.send("CAP REQ :twitch.tv/membership twitch.tv/tags twitch.tv/commands\c\L")
+  client.user = User(login:client.credentials["LOGIN"], id:client.credentials["ID"].parseInt)
+  discard client.joinChannel(client.user.login)
   for i in 0..10:
     discard client.socket.recvLine
   let tst = client.socket.recvLine.parseIRCCommand
-  client.user = User(tags:tst.tags)
-  client.user.login = client.credentials["LOGIN"]
-  client.user.id = client.credentials["ID"].parseInt
+  client.user.tags = tst.tags
   client.user.displayName = client.user.tags.getTag("display-name").value
-  discard client.joinChannel(client.user.login)
 
 

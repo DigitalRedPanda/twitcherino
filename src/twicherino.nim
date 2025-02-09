@@ -1,7 +1,7 @@
 # This is just an example to get you started. A typical binary package
 # uses this file as the main entry point of the application.
 
-import illwill, os, sequtils, sugar, irc/client, std/strformat, re, net, strutils, asyncdispatch, tables, terminal, json, rdstdin
+import illwill, os, sequtils, sugar, irc/client, std/strformat, re, net, strutils, asyncdispatch, tables, terminal, json, rdstdin, env/env
 
 
   
@@ -54,9 +54,11 @@ type Mode = enum
 
 
 proc main = 
-  var client = newClient()
+  var 
+    client = newClient()
+    authenticated = true
   const mesg = "  \e[1;36m\e[4mhttps://id.twitch.tv/oauth2/authorize?client_id=yclsy2qxp7jelxtbl09my7wvk8w3b2&redirect_uri=https%3A%2F%2Flocalhost&response_type=token&scope=channel%3Amoderate+channel%3Aread%3Aredemptions+chat%3Aedit+chat%3Aread+whispers%3Aread+channel%3Aedit%3Acommercial+clips%3Aedit+channel%3Amanage%3Abroadcast+user%3Aread%3Ablocked_users+user%3Amanage%3Ablocked_users+moderator%3Amanage%3Aautomod+channel%3Amanage%3Araids+channel%3Amanage%3Apolls+channel%3Aread%3Apolls+channel%3Amanage%3Apredictions+channel%3Aread%3Apredictions+moderator%3Amanage%3Aannouncements+user%3Amanage%3Awhispers+moderator%3Amanage%3Abanned_users+moderator%3Amanage%3Achat_messages+user%3Amanage%3Achat_color+moderator%3Amanage%3Achat_settings+channel%3Amanage%3Amoderators+channel%3Amanage%3Avips+moderator%3Aread%3Achatters+moderator%3Amanage%3Ashield_mode+moderator%3Amanage%3Ashoutouts+user%3Aread%3Amoderated_channels+user%3Aread%3Achat+user%3Awrite%3Achat+user%3Aread%3Aemotes+moderator%3Amanage%3Awarnings+user%3Aread%3Afollows\e[22m\e[24m\e[0m\n\nYou'll be prompted to sign in, then authorization. After that you'll end up in an `\e[1mUnable to connect\e[22m`, if you look carefully at the URL, you'd find `#access_token=\e[1m<TOKEN>\e[22m`double-click on \e[1m<TOKEN>\e[22m, copy it, then paste it in the terminal"
-  const mesg1 = "  \e[1;36m\e[4mhttps://id.twitch.tv/oauth2/authorize?client_id=yclsy2qxp7jelxtbl09my7wvk8w3b2&redirect_uri=https%3A%2F%2Flocalhost&response_type=token&scope=channel%3Amoderate+channel%3Aread%3Aredemptions+chat%3Aedit+chat%3Aread+whispers%3Aread+channel%3Aedit%3Acommercial+clips%3Aedit+channel%3Amanage%3Abroadcast+user%3Aread%3Ablocked_users+user%3Amanage%3Ablocked_users+moderator%3Amanage%3Aautomod+channel%3Amanage%3Araids+channel%3Amanage%3Apolls+channel%3Aread%3Apolls+channel%3Amanage%3Apredictions+channel%3Aread%3Apredictions+moderator%3Amanage%3Aannouncements+user%3Amanage%3Awhispers+moderator%3Amanage%3Abanned_users+moderator%3Amanage%3Achat_messages+user%3Amanage%3Achat_color+moderator%3Amanage%3Achat_settings+channel%3Amanage%3Amoderators+channel%3Amanage%3Avips+moderator%3Aread%3Achatters+moderator%3Amanage%3Ashield_mode+moderator%3Amanage%3Ashoutouts+user%3Aread%3Amoderated_channels+user%3Aread%3Achat+user%3Awrite%3Achat+user%3Aread%3Aemotes+moderator%3Amanage%3Awarnings+user%3Aread%3Afollows\e[22m\e[24m\e[0m\n\nYou'll be prompted to sign in, then authorization. After that you'll end up in an `\e[1mUnable to connect\e[22m`, if you look carefully at the URL, you'd find `#access_token=\e[1m<TOKEN>\e[22m`double-click on \e[1m<TOKEN>\e[22m, copy it, then press enter, and paste "
+  const mesg1 = "  \e[1;36m\e[4mhttps://id.twitch.tv/oauth2/authorize?client_id=yclsy2qxp7jelxtbl09my7wvk8w3b2&redirect_uri=https%3A%2F%2Flocalhost&response_type=token&scope=channel%3Amoderate+channel%3Aread%3Aredemptions+chat%3Aedit+chat%3Aread+whispers%3Aread+channel%3Aedit%3Acommercial+clips%3Aedit+channel%3Amanage%3Abroadcast+user%3Aread%3Ablocked_users+user%3Amanage%3Ablocked_users+moderator%3Amanage%3Aautomod+channel%3Amanage%3Araids+channel%3Amanage%3Apolls+channel%3Aread%3Apolls+channel%3Amanage%3Apredictions+channel%3Aread%3Apredictions+moderator%3Amanage%3Aannouncements+user%3Amanage%3Awhispers+moderator%3Amanage%3Abanned_users+moderator%3Amanage%3Achat_messages+user%3Amanage%3Achat_color+moderator%3Amanage%3Achat_settings+channel%3Amanage%3Amoderators+channel%3Amanage%3Avips+moderator%3Aread%3Achatters+moderator%3Amanage%3Ashield_mode+moderator%3Amanage%3Ashoutouts+user%3Aread%3Amoderated_channels+user%3Aread%3Achat+user%3Awrite%3Achat+user%3Aread%3Aemotes+moderator%3Amanage%3Awarnings+user%3Aread%3Afollows\e[22m\e[24m\e[0m\n\nYou'll be prompted to sign in, then authorization. After that you'll end up in an `\e[1mUnable to connect\e[22m`, if you look carefully at the URL, you'd find `#access_token=\e[1m<TOKEN>\e[22m`double-click on \e[1m<TOKEN>\e[22m, copy it, then press enter, and paste in the box"
 
   try:
     
@@ -65,7 +67,9 @@ proc main =
     let 
       center = terminalWidth() div 2 - (46 div 2)
       width = terminalWidth()
+    stdout.write("\e[2J\e[0;0H")
     stdout.write(&"""
+
 {"=".repeat(width)}
 {" ".repeat(center)}__        _______ _     ____ ___  __  __ _____
 {" ".repeat(center)}\ \      / / ____| |   / ___/ _ \|  \/  | ____|
@@ -76,11 +80,76 @@ proc main =
 
 if you received this message, then this indicates that probably this is your first time launching this app. To set things up, you first need to generate a token using the link marked by bold:
 
-{mesg}
+{mesg1}
 """)
 
-    sleep(10000)
+    let s =  getch()
+    if s == 0x03.chr or s == 0x1B.chr:
+      stdout.writeLine("[\e[1;34mINFO\e[0m] cancelling")
+      return
+    authenticated = false
   illwillInit()
+  if not authenticated:
+    var
+      currentIndex = 0.Natural
+      token = ""
+    stdout.write("\e[38;5;239m")
+    while true:
+      let
+        width = terminalWidth()
+        height = terminalHeight()
+      var
+        buffer = newTerminalBuffer(width, height)
+      
+      buffer.drawRect(0, 0, width - 1, height - 1, true)
+      buffer.drawInputBox(x=(width div 2).Natural, y=(height div 2).Natural, width=40, placeholder="Enter token", text="*".repeat(token.len))
+      stdout.write("\e[37m")
+      let key = getKey()
+      sleep 1
+      case key:
+        of Right:
+          if currentIndex < token.len - 1:
+            inc currentIndex
+        of Left:
+          if currentIndex > 0:
+            dec currentIndex
+        of Escape: 
+          quit(0)
+        of Tab: discard
+        of Backspace:
+          if token.len > 0:
+            token = token[0..token.len - 2]
+            dec currentIndex 
+        of None:
+          discard
+        of Enter:
+          let response = client.validate(token)
+          if response.valid:
+            try:
+              let body = response.content.parseJson
+              var credentials = initTable[string,string]()
+              credentials["CLIENT_ID"] = body["client_id"].getStr
+              credentials["LOGIN"] = body["login"].getStr
+              credentials["ID"] = body["user_id"].getStr
+              credentials["TOKEN"] = token
+              client.credentials = credentials
+              write("src/env/.env", credentials)
+              client.init
+              buffer.clear
+              stdout.write("\e[38;5;239m")
+            except KeyError:
+              stdout.writeLine("\e[2J\e[0;0H[\e[1;31mERROR\e[0m] Invalid token")
+              quit(1)
+              
+            break
+          else:
+            currentIndex = 0
+            token = ""
+        else: 
+          token.insert("" & key.char, currentIndex)
+          inc currentIndex
+      buffer.display
+
   open(channel)
   hideCursor()
   defer: 
@@ -96,6 +165,8 @@ if you received this message, then this indicates that probably this is your fir
       showCursor()
       quit("[\e[32mINFO\e[0m] exiting", 0)
     )
+
+
   var
     thread: Thread[Client]
     messagesList = newSeq[twicherino.Message]()
@@ -106,8 +177,9 @@ if you received this message, then this indicates that probably this is your fir
     currentChannel = client.user.login
     currentChannelIndex = 0
     addingChannel = false
-    color = bgNone 
+    color = illwill.bgWhite
   createThread(thread, handleMessages, client)
+
   channels.add(currentChannel)
   while true:
     let
@@ -186,8 +258,6 @@ if you received this message, then this indicates that probably this is your fir
         of Backspace:
           if command.len > 0:
            command = command[0..command.len - 2]
-        of Slash:
-          discard
         of Space:
           command &= ' '
         of Enter:
@@ -214,7 +284,6 @@ if you received this message, then this indicates that probably this is your fir
       buffer.setBackgroundColor(color)
       buffer.write(2 + command.len, height - 2, cursor)
     stdout.write("\e[38;5;239m")
-    sleep(3)
     buffer.display()
 
 proc main1 = 

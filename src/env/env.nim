@@ -1,4 +1,4 @@
-import strutils, tables, std/os, options
+import strutils, tables, std/os, options, std/syncio
 proc load*(fileName: string): Option[Table[string,string]] =
   if fileName.fileExists:
     result = some(initTable[string, string]())
@@ -10,7 +10,7 @@ proc load*(fileName: string): Option[Table[string,string]] =
 
 proc write*(fileName: string, info: Table[string,string]) =
   if not fileName.fileExists:
-    var file: File
-    if open(file, fileName):
-      for key, value in pairs(info): 
-        file.writeLine(key & '=' & value)
+    var file = open(fileName, fmWrite)
+    defer: file.close()
+    for key, value in pairs(info): 
+      file.writeLine(key & '=' & value)
