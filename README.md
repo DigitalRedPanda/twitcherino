@@ -1,9 +1,9 @@
 # Twitcherino
 ![](https://raw.githubusercontent.com/DigitalRedPanda/twitcherino/refs/heads/master/images/demo.gif)
-**Twitcherino** is a TUI nim-based twitch client 
+**Twitcherino** is a keyboard-driven TUI twitch client 
 
 ## Requirements
-1. sqlite
+1. ~~sqlite~~ (in the future)
 2. terminal (any could do)
 
 ## Building from source
