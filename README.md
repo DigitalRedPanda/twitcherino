@@ -1,5 +1,5 @@
 # Twitcherino
-[demo.gif](https://raw.githubusercontent.com/DigitalRedPanda/twitcherino/refs/heads/master/images/demo.gif)
+[](https://raw.githubusercontent.com/DigitalRedPanda/twitcherino/refs/heads/master/images/demo.gif)
 **Twitcherino** is a TUI nim-based twitch client 
 
 ## Requirements
